@@ -15,12 +15,13 @@ export function initializeGameState() {
   return state;
 }
 
-export function applyMove(state, startX, startY, endX, endY, arrowX, arrowY) {
+// arrowValue: 3 = player arrow (blue), 4 = AI arrow (red)
+export function applyMove(state, startX, startY, endX, endY, arrowX, arrowY, arrowValue = 3) {
   const next = [...state];
   const piece = next[startX * 11 + startY];
   next[startX * 11 + startY] = 0;
   next[endX * 11 + endY] = piece;
-  next[arrowX * 11 + arrowY] = 3;
+  next[arrowX * 11 + arrowY] = arrowValue;
   return next;
 }
 

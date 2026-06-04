@@ -97,7 +97,11 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
       const isVacated = movePhase === 'shooting' && queenStart && row === queenStart.row && col === queenStart.col;
       if (!isVacated) content = <span className="queen white-queen">♕</span>;
     } else if (value === 3) {
-      classNames.push('arrow-cell');
+      // Player arrow — blue square, no shape
+      classNames.push('arrow-cell-player');
+    } else if (value === 4) {
+      // AI arrow — red with arrow shape
+      classNames.push('arrow-cell-ai');
       content = <div className="arrow-block" />;
     }
 
@@ -113,7 +117,7 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
     if (movePhase === 'shooting' && queenEnd) {
       if (queenEnd.row === row && queenEnd.col === col) {
         classNames.push('queen-position');
-      } else if (value !== 3 && isValidArrowShot(queenEnd, { row, col }, queenStart)) {
+      } else if (value !== 3 && value !== 4 && isValidArrowShot(queenEnd, { row, col }, queenStart)) {
         classNames.push('valid-arrow');
       }
     }
@@ -131,16 +135,16 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
 
   const phaseMsg = () => {
     if (interactive) {
-      if (movePhase === 'selecting') return '> QUEEN SELECTED — CHOOSE DESTINATION';
-      if (movePhase === 'shooting')  return '> QUEEN MOVED — SHOOT AN ARROW';
-      return '> SELECT A QUEEN TO MOVE';
+      if (movePhase === 'selecting') return '[ YOUR TURN ]  QUEEN SELECTED — CHOOSE DESTINATION';
+      if (movePhase === 'shooting')  return '[ YOUR TURN ]  QUEEN MOVED — SHOOT AN ARROW';
+      return '[ YOUR TURN ]  SELECT A QUEEN TO MOVE';
     }
-    return isAIThinking ? '> AI IS COMPUTING...' : '> STANDBY';
+    return isAIThinking ? "[ AI'S TURN ]  COMPUTING MOVE..." : '> STANDBY';
   };
 
   return (
     <div className="board-container">
-      <div className={`phase-info ${interactive && movePhase ? 'active-phase' : ''} ${!interactive ? 'ai-phase' : ''}`}>
+      <div className={`phase-info ${interactive ? 'player-phase' : ''} ${!interactive && isAIThinking ? 'ai-phase' : ''}`}>
         {phaseMsg()}
       </div>
 

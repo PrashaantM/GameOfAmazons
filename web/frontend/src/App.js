@@ -9,7 +9,7 @@ function App() {
   const [gameState, setGameStateRaw]      = useState(stateRef.current);
   const [playerColor, setPlayerColor]     = useState(1);
   const [isAIThinking, setIsAIThinking]   = useState(false);
-  const [message, setMessage]             = useState('[ BLACK MOVES FIRST ]');
+  const [message, setMessage]             = useState('[ YOUR TURN — BLACK MOVES FIRST ]');
   const [selectedCell, setSelectedCell]   = useState(null);
   const [gameMode, setGameMode]           = useState('pvai');
   const [aiTurn, setAiTurn]               = useState(1);
@@ -36,7 +36,8 @@ function App() {
 
   const runAITurn = (color) => {
     setIsAIThinking(true);
-    // Yield to React so the "thinking" state renders before heavy computation
+    // arrowValue: color 1 → 3 (blue), color 2 → 4 (red) for visual distinction in AI vs AI
+    const arrowValue = color === 1 ? 3 : 4;
     setTimeout(() => {
       const current = stateRef.current;
       const move = getAIMove(current, color);
@@ -47,7 +48,7 @@ function App() {
         setAiVsAiRunning(false);
         setGameOver(true);
       } else {
-        const next = applyMove(current, move.startX, move.startY, move.endX, move.endY, move.arrowX, move.arrowY);
+        const next = applyMove(current, move.startX, move.startY, move.endX, move.endY, move.arrowX, move.arrowY, arrowValue);
         setGameState(next);
         const label = color === 1 ? 'BLACK' : 'WHITE';
         setMessage(`[ ${label}: (${move.startX},${move.startY})→(${move.endX},${move.endY}) arrow(${move.arrowX},${move.arrowY}) ]`);
@@ -58,7 +59,8 @@ function App() {
   };
 
   const handlePlayerMove = (startX, startY, endX, endY, arrowX, arrowY) => {
-    const afterPlayer = applyMove(stateRef.current, startX, startY, endX, endY, arrowX, arrowY);
+    // Player arrow = value 3 (blue square)
+    const afterPlayer = applyMove(stateRef.current, startX, startY, endX, endY, arrowX, arrowY, 3);
     setGameState(afterPlayer);
     setSelectedCell(null);
 
@@ -69,8 +71,9 @@ function App() {
       return;
     }
 
-    setMessage('[ AI THINKING... ]');
+    setMessage("[ AI'S TURN — THINKING... ]");
     setIsAIThinking(true);
+    // Wait 1 second before AI responds so the player can see their move
     setTimeout(() => {
       const move = getAIMove(afterPlayer, aiColor);
       if (!move) {
@@ -79,19 +82,20 @@ function App() {
         setIsAIThinking(false);
         return;
       }
-      const afterAI = applyMove(afterPlayer, move.startX, move.startY, move.endX, move.endY, move.arrowX, move.arrowY);
+      // AI arrow = value 4 (red arrow shape)
+      const afterAI = applyMove(afterPlayer, move.startX, move.startY, move.endX, move.endY, move.arrowX, move.arrowY, 4);
       setGameState(afterAI);
-      const label = aiColor === 1 ? 'BLACK' : 'WHITE';
-      setMessage(`[ ${label}: (${move.startX},${move.startY})→(${move.endX},${move.endY}) arrow(${move.arrowX},${move.arrowY}) ]`);
 
       if (getAllMoves(afterAI, playerColor).length === 0) {
         const loser  = playerColor === 1 ? 'BLACK' : 'WHITE';
         const winner = aiColor === 1 ? 'BLACK' : 'WHITE';
         setMessage(`[ GAME OVER — ${loser} HAS NO MOVES. ${winner} WINS ]`);
         setGameOver(true);
+      } else {
+        setMessage('[ YOUR TURN ]');
       }
       setIsAIThinking(false);
-    }, 0);
+    }, 1000);
   };
 
   const handleNewGame = () => {
@@ -103,7 +107,7 @@ function App() {
     } else {
       const next = playerColor === 1 ? 2 : 1;
       setPlayerColor(next);
-      setMessage(`[ YOU ARE NOW ${next === 1 ? 'BLACK' : 'WHITE'} — BLACK MOVES FIRST ]`);
+      setMessage(`[ YOUR TURN — YOU ARE NOW ${next === 1 ? 'BLACK' : 'WHITE'} ]`);
     }
   };
 
@@ -116,7 +120,7 @@ function App() {
       setMessage('[ AI VS AI — WATCH THE MACHINES BATTLE ]');
       setTimeout(() => setAiVsAiRunning(true), 50);
     } else {
-      setMessage('[ BLACK MOVES FIRST ]');
+      setMessage('[ YOUR TURN — BLACK MOVES FIRST ]');
     }
   };
 
@@ -204,10 +208,14 @@ function App() {
                 <span>White queen</span>
               </div>
               <div className="legend-item">
-                <div className="legend-cell arrow">
+                <div className="legend-cell arrow-ai">
                   <div className="arrow-block-legend" />
                 </div>
-                <span>Arrow — blocked forever</span>
+                <span>AI arrow (red)</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-cell arrow-player" />
+                <span>Your arrow (blue)</span>
               </div>
               <div className="legend-item">
                 <div className="legend-cell sel" />
