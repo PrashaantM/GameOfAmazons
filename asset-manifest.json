@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/GameOfAmazons/static/css/main.e6e77aee.css",
+    "main.js": "/GameOfAmazons/static/js/main.8ff9196e.js",
+    "index.html": "/GameOfAmazons/index.html",
+    "main.e6e77aee.css.map": "/GameOfAmazons/static/css/main.e6e77aee.css.map",
+    "main.8ff9196e.js.map": "/GameOfAmazons/static/js/main.8ff9196e.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6e77aee.css",
+    "static/js/main.8ff9196e.js"
+  ]
+}
