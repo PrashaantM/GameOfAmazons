@@ -2,5 +2,8 @@
     "java.import.exclusions": [
         "**/node_modules/**",
         "**/web/**"
+    ],
+    "java.project.referencedLibraries": [
+        "COSC322_Project/cosc_322_project/lib/**/*.jar"
     ]
 }
