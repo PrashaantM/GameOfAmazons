@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import '../styles/Board.css';
 
-function Board({ gameState, selectedCell, onSelectCell, onMove, isAIThinking }) {
-  const [movePhase, setMovePhase] = useState(null); // 'selecting', 'moving', 'shooting'
+function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isAIThinking }) {
+  const [movePhase, setMovePhase] = useState(null); // null | 'selecting' | 'shooting'
   const [queenStart, setQueenStart] = useState(null);
   const [queenEnd, setQueenEnd] = useState(null);
 
-  const getCellValue = (row, col) => {
-    const index = row * 11 + col;
-    return gameState[index];
-  };
+  const getCellValue = (row, col) => gameState[row * 11 + col];
 
   const handleCellClick = (row, col) => {
-    if (isAIThinking) return;
-
+    if (!interactive) return;
     const value = getCellValue(row, col);
 
-    // Phase 1: Select queen
+    // Phase 1: select a queen
     if (!queenStart) {
       if (value === 1 || value === 2) {
         setQueenStart({ row, col });
@@ -26,10 +22,9 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, isAIThinking }) 
       return;
     }
 
-    // Phase 2: Move queen
+    // Phase 2: choose queen destination
     if (!queenEnd) {
       if (queenStart.row === row && queenStart.col === col) {
-        // Deselect
         setQueenStart(null);
         setMovePhase(null);
         onSelectCell(null);
@@ -37,25 +32,15 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, isAIThinking }) 
       }
       if (isValidQueenMove(queenStart, { row, col })) {
         setQueenEnd({ row, col });
-        setMovePhase('moving');
+        setMovePhase('shooting');
         onSelectCell({ row, col });
       }
       return;
     }
 
-    // Phase 3: Shoot arrow
-    if (isValidArrowMove(queenEnd, { row, col })) {
-      const move = {
-        startX: queenStart.row,
-        startY: queenStart.col,
-        endX: queenEnd.row,
-        endY: queenEnd.col,
-        arrowX: row,
-        arrowY: col
-      };
-      onMove(move.startX, move.startY, move.endX, move.endY, move.arrowX, move.arrowY);
-
-      // Reset
+    // Phase 3: shoot arrow (queen's old square is now vacated)
+    if (isValidArrowShot(queenEnd, { row, col }, queenStart)) {
+      onMove(queenStart.row, queenStart.col, queenEnd.row, queenEnd.col, row, col);
       setQueenStart(null);
       setQueenEnd(null);
       setMovePhase(null);
@@ -66,73 +51,77 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, isAIThinking }) 
   const isValidQueenMove = (from, to) => {
     const dr = to.row - from.row;
     const dc = to.col - from.col;
-
-    // Must move in straight line (horizontal, vertical, or diagonal)
     if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return false;
-
-    // Path must be clear
     const stepR = Math.sign(dr);
     const stepC = Math.sign(dc);
-    let r = from.row + stepR;
-    let c = from.col + stepC;
-
+    if (stepR === 0 && stepC === 0) return false;
+    let r = from.row + stepR, c = from.col + stepC;
     while (!(r === to.row && c === to.col)) {
       if (getCellValue(r, c) !== 0) return false;
-      r += stepR;
-      c += stepC;
+      r += stepR; c += stepC;
     }
-
-    // Target must be empty
     return getCellValue(to.row, to.col) === 0;
   };
 
-  const isValidArrowMove = (from, to) => {
+  // Arrow shot path treats `vacated` (queen's old square) as empty
+  const isValidArrowShot = (from, to, vacated) => {
     const dr = to.row - from.row;
     const dc = to.col - from.col;
-
     if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return false;
     if (dr === 0 && dc === 0) return false;
-
     const stepR = Math.sign(dr);
     const stepC = Math.sign(dc);
-    let r = from.row + stepR;
-    let c = from.col + stepC;
-
+    let r = from.row + stepR, c = from.col + stepC;
     while (!(r === to.row && c === to.col)) {
-      if (getCellValue(r, c) !== 0) return false;
-      r += stepR;
-      c += stepC;
+      const isVacated = vacated && r === vacated.row && c === vacated.col;
+      if (!isVacated && getCellValue(r, c) !== 0) return false;
+      r += stepR; c += stepC;
     }
-
-    return getCellValue(to.row, to.col) === 0;
+    const isVacatedTarget = vacated && to.row === vacated.row && to.col === vacated.col;
+    return isVacatedTarget || getCellValue(to.row, to.col) === 0;
   };
 
   const renderCell = (row, col) => {
     const value = getCellValue(row, col);
     const isSelected = selectedCell && selectedCell.row === row && selectedCell.col === col;
+    const isLight = (row + col) % 2 === 0;
 
-    let content = '';
-    let className = 'cell';
+    const classNames = ['cell', isLight ? 'light-sq' : 'dark-sq'];
+    let content = null;
 
-    if (value === 1) content = '♛'; // Black queen
-    else if (value === 2) content = '♕'; // White queen
-    else if (value === 3) content = '💣'; // Arrow
-
-    if (isSelected) className += ' selected';
-    if (movePhase === 'moving' && queenStart && isValidQueenMove(queenStart, { row, col })) {
-      className += ' valid-move';
+    // Pieces — hide queen at vacated start position while shooting
+    if (value === 1) {
+      const isVacated = movePhase === 'shooting' && queenStart && row === queenStart.row && col === queenStart.col;
+      if (!isVacated) content = <span className="queen black-queen">♛</span>;
+    } else if (value === 2) {
+      const isVacated = movePhase === 'shooting' && queenStart && row === queenStart.row && col === queenStart.col;
+      if (!isVacated) content = <span className="queen white-queen">♕</span>;
+    } else if (value === 3) {
+      classNames.push('arrow-cell');
+      content = <div className="arrow-block" />;
     }
-    if (movePhase === 'moving' && queenEnd && queenEnd.row === row && queenEnd.col === col) {
-      className += ' queen-position';
+
+    if (isSelected) classNames.push('selected');
+
+    // Valid queen destinations (only during queen-selection phase)
+    if (movePhase === 'selecting' && queenStart && value === 0 &&
+        isValidQueenMove(queenStart, { row, col })) {
+      classNames.push('valid-move');
     }
-    if (movePhase === 'moving' && queenEnd && isValidArrowMove(queenEnd, { row, col })) {
-      className += ' valid-arrow';
+
+    // Arrow-shooting phase highlights
+    if (movePhase === 'shooting' && queenEnd) {
+      if (queenEnd.row === row && queenEnd.col === col) {
+        classNames.push('queen-position');
+      } else if (value !== 3 && isValidArrowShot(queenEnd, { row, col }, queenStart)) {
+        classNames.push('valid-arrow');
+      }
     }
 
     return (
       <div
         key={`${row}-${col}`}
-        className={className}
+        className={classNames.join(' ')}
         onClick={() => handleCellClick(row, col)}
       >
         {content}
@@ -140,30 +129,38 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, isAIThinking }) 
     );
   };
 
+  const phaseMsg = () => {
+    if (interactive) {
+      if (movePhase === 'selecting') return '> QUEEN SELECTED — CHOOSE DESTINATION';
+      if (movePhase === 'shooting')  return '> QUEEN MOVED — SHOOT AN ARROW';
+      return '> SELECT A QUEEN TO MOVE';
+    }
+    return isAIThinking ? '> AI IS COMPUTING...' : '> STANDBY';
+  };
+
   return (
     <div className="board-container">
-      <div className="phase-info">
-        {movePhase === 'selecting' && <span>📍 Select queen - click to move</span>}
-        {movePhase === 'moving' && <span>🎯 Click destination to move queen</span>}
-        {movePhase === 'moving' && queenEnd && <span>🏹 Click to shoot arrow</span>}
-        {!movePhase && <span>Select a queen to move</span>}
+      <div className={`phase-info ${interactive && movePhase ? 'active-phase' : ''} ${!interactive ? 'ai-phase' : ''}`}>
+        {phaseMsg()}
       </div>
+
       <div className="board">
         {Array.from({ length: 10 }).map((_, row) =>
           Array.from({ length: 10 }).map((_, col) => renderCell(row + 1, col + 1))
         )}
       </div>
-      {queenStart && (
+
+      {queenStart && interactive && (
         <button
+          className="cancel-btn"
           onClick={() => {
             setQueenStart(null);
             setQueenEnd(null);
             setMovePhase(null);
             onSelectCell(null);
           }}
-          className="cancel-btn"
         >
-          Cancel Move
+          CANCEL MOVE
         </button>
       )}
     </div>

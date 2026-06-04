@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { execSync, spawn } from 'child_process';
+import { execSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,8 +8,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Health check endpoint
+app.get('/', (_, res) => {
+  res.json({ status: 'ok', message: 'Amazons AI server is running' });
+});
 
 // Game state management
 let gameState = initializeGameState();
@@ -31,7 +42,6 @@ function initializeGameState() {
 
 function callJavaAI(playerColor) {
   try {
-    const javaPath = path.join(__dirname, '../java-ai-wrapper');
     const classPath = path.join(__dirname, '../../COSC322_Project/cosc_322_project/target/classes') + ':' +
                       path.join(__dirname, '../../COSC322_Project/cosc_322_project/lib/*');
 

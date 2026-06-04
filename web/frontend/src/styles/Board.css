@@ -2,92 +2,175 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
 }
 
 .phase-info {
-  font-size: 0.95em;
-  color: #666;
-  height: 24px;
-  min-height: 24px;
+  font-size: 0.76em;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.05em;
+  height: 20px;
+  min-height: 20px;
+  color: #555;
 }
 
+.phase-info.active-phase {
+  color: #0077ff;
+  text-shadow: 0 0 8px rgba(0, 119, 255, 0.4);
+}
+
+.phase-info.ai-phase {
+  color: #555;
+  animation: pulse-phase 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-phase {
+  from { opacity: 0.5; }
+  to   { opacity: 1; }
+}
+
+/* ── Board grid ───────────────────────────────────────── */
 .board {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 2px;
-  background: #333;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+  grid-template-columns: repeat(10, 48px);
+  grid-template-rows: repeat(10, 48px);
+  gap: 1px;
+  background: #111;
+  padding: 8px;
+  border: 1px solid #1e1e1e;
+  border-radius: 2px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.04), inset 0 0 20px rgba(0, 0, 0, 0.6);
 }
 
+/* ── Cells ────────────────────────────────────────────── */
 .cell {
-  aspect-ratio: 1;
-  background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
-  border: 1px solid #bbb;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8em;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.1s, border-color 0.1s, box-shadow 0.1s;
   user-select: none;
+  border: 1px solid transparent;
+  position: relative;
 }
 
+.cell.light-sq { background: #181818; }
+.cell.dark-sq  { background: #121212; }
+
 .cell:hover {
-  background: linear-gradient(135deg, #d4e8f0 0%, #c0dce8 100%);
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1);
+  background: #1c2a1c;
+  border-color: #223322;
 }
 
 .cell.selected {
-  background: #ffeb3b;
-  box-shadow: inset 0 0 10px rgba(255, 235, 59, 0.5), 0 0 10px rgba(255, 235, 59, 0.3);
-  border-color: #fbc02d;
+  background: rgba(0, 255, 65, 0.11);
+  border-color: #00ff41;
+  box-shadow: inset 0 0 12px rgba(0, 255, 65, 0.18), 0 0 6px rgba(0, 255, 65, 0.12);
 }
 
 .cell.valid-move {
-  background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
-  box-shadow: inset 0 0 8px rgba(76, 175, 80, 0.3);
+  background: rgba(0, 119, 255, 0.07);
+  border-color: #003366;
+  cursor: pointer;
 }
 
 .cell.valid-move:hover {
-  background: linear-gradient(135deg, #a5d6a7 0%, #81c784 100%);
+  background: rgba(0, 119, 255, 0.16);
+  border-color: #0055aa;
+  box-shadow: inset 0 0 10px rgba(0, 119, 255, 0.2);
 }
 
 .cell.queen-position {
-  background: #81c784;
-  border-color: #66bb6a;
-  box-shadow: inset 0 0 8px rgba(76, 175, 80, 0.5);
+  background: rgba(0, 119, 255, 0.14);
+  border-color: #0066cc;
+  box-shadow: inset 0 0 10px rgba(0, 119, 255, 0.25);
 }
 
 .cell.valid-arrow {
-  background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
-  box-shadow: inset 0 0 8px rgba(255, 152, 0, 0.3);
+  background: rgba(255, 51, 51, 0.07);
+  border-color: #330000;
+  cursor: pointer;
 }
 
 .cell.valid-arrow:hover {
-  background: linear-gradient(135deg, #ffcc80 0%, #ffb74d 100%);
+  background: rgba(255, 51, 51, 0.16);
+  border-color: #882222;
+  box-shadow: inset 0 0 10px rgba(255, 51, 51, 0.2);
 }
 
+.cell.arrow-cell {
+  background: #120303;
+  border-color: #1e0606;
+  cursor: not-allowed;
+}
+
+.cell.arrow-cell:hover {
+  background: #120303;
+  border-color: #1e0606;
+}
+
+/* ── Pieces ───────────────────────────────────────────── */
+.queen {
+  font-size: 1.75em;
+  line-height: 1;
+  display: block;
+}
+
+.black-queen {
+  color: #e8e8e8;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.35), 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.white-queen {
+  color: #aaa;
+  text-shadow: 0 0 10px rgba(0, 119, 255, 0.35), 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* ── Arrow marker (blocked square) ───────────────────── */
+.arrow-block {
+  width: 22px;
+  height: 17px;
+  background: #cc2222;
+  clip-path: polygon(0% 25%, 58% 25%, 58% 0%, 100% 50%, 58% 100%, 58% 75%, 0% 75%);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+/* ── Cancel button ────────────────────────────────────── */
 .cancel-btn {
-  padding: 8px 16px;
-  font-size: 0.9em;
-  background: #ef4444;
-  margin-top: 10px;
+  padding: 6px 14px;
+  font-size: 0.78em;
+  border-color: #ff3333;
+  color: #ff3333;
+  margin-top: 6px;
 }
 
-.cancel-btn:hover {
-  background: #dc2626;
+.cancel-btn:hover:not(:disabled) {
+  background: rgba(255, 51, 51, 0.1);
+  box-shadow: 0 0 10px rgba(255, 51, 51, 0.2);
 }
 
+/* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 600px) {
   .board {
-    gap: 1px;
-    padding: 8px;
+    grid-template-columns: repeat(10, 36px);
+    grid-template-rows: repeat(10, 36px);
+    padding: 6px;
   }
 
   .cell {
-    font-size: 1.2em;
+    width: 36px;
+    height: 36px;
+  }
+
+  .queen {
+    font-size: 1.3em;
+  }
+
+  .arrow-block {
+    width: 16px;
+    height: 12px;
   }
 }
