@@ -1,5 +1,9 @@
 # Game of Amazons AI Agent
 
+## [Play Now](https://prashaantm.github.io/GameOfAmazons/)
+
+---
+
 ## Overview
 
 This project is a competitive AI agent for the board game *Game of the Amazons*, developed as part of a 4-person team project for COSC 322 (UBC).

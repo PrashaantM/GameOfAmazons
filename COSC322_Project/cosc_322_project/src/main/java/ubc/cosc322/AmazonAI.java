@@ -68,7 +68,7 @@ public class AmazonAI {
         for (MCTSNode child : root.children) {
             if (best == null || child.visits > best.visits) best = child;
         }
-        System.out.println("MCTS root visits: " + root.visits);
+        System.err.println("MCTS root visits: " + root.visits);
         return best == null ? null : best.move;
     }
 
