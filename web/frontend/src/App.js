@@ -1,96 +1,105 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Board from './components/Board';
+import { initializeGameState, applyMove, getAllMoves } from './gameLogic';
+import { getAIMove } from './aiLogic';
 
 function App() {
-  const [gameState, setGameState]       = useState(null);
-  const [playerColor, setPlayerColor]   = useState(1);
-  const [isAIThinking, setIsAIThinking] = useState(false);
-  const [message, setMessage]           = useState('');
-  const [selectedCell, setSelectedCell] = useState(null);
-  const [gameMode, setGameMode]         = useState('pvai'); // 'pvai' | 'aivai'
-  const [aiTurn, setAiTurn]             = useState(1);      // whose turn in aivai
+  const stateRef = useRef(initializeGameState());
+  const [gameState, setGameStateRaw]      = useState(stateRef.current);
+  const [playerColor, setPlayerColor]     = useState(1);
+  const [isAIThinking, setIsAIThinking]   = useState(false);
+  const [message, setMessage]             = useState('[ BLACK MOVES FIRST ]');
+  const [selectedCell, setSelectedCell]   = useState(null);
+  const [gameMode, setGameMode]           = useState('pvai');
+  const [aiTurn, setAiTurn]               = useState(1);
   const [aiVsAiRunning, setAiVsAiRunning] = useState(false);
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const [gameOver, setGameOver]           = useState(false);
 
-  // Kick off initial game on mount
-  useEffect(() => {
-    resetToServer().then(() => setMessage('[ BLACK MOVES FIRST ]'));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const setGameState = (s) => { stateRef.current = s; setGameStateRaw(s); };
 
-  // AI vs AI engine — fires whenever it's a new turn and nothing is blocking
-  useEffect(() => {
-    if (!aiVsAiRunning || isAIThinking) return;
-    const timer = setTimeout(() => doAIMove(aiTurn), 800);
-    return () => clearTimeout(timer);
-  }, [aiVsAiRunning, aiTurn, isAIThinking]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const resetToServer = async () => {
-    const res  = await fetch(`${API_URL}/api/game/reset`, { method: 'POST' });
-    const data = await res.json();
-    setGameState(data.gameState);
+  const resetGame = () => {
+    const fresh = initializeGameState();
+    setGameState(fresh);
     setAiTurn(1);
     setSelectedCell(null);
     setIsAIThinking(false);
+    setGameOver(false);
   };
 
-  const doAIMove = async (color) => {
+  // AI vs AI loop
+  useEffect(() => {
+    if (!aiVsAiRunning || isAIThinking || gameOver) return;
+    const timer = setTimeout(() => runAITurn(aiTurn), 600);
+    return () => clearTimeout(timer);
+  }, [aiVsAiRunning, aiTurn, isAIThinking, gameOver]); // eslint-disable-line
+
+  const runAITurn = (color) => {
     setIsAIThinking(true);
-    try {
-      const res  = await fetch(`${API_URL}/api/game/ai-move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerColor: color }),
-      });
-      const data = await res.json();
-      if (data.error) {
+    // Yield to React so the "thinking" state renders before heavy computation
+    setTimeout(() => {
+      const current = stateRef.current;
+      const move = getAIMove(current, color);
+      if (!move) {
         const loser  = color === 1 ? 'BLACK' : 'WHITE';
         const winner = color === 1 ? 'WHITE' : 'BLACK';
-        setMessage(`[ GAME OVER — ${loser} has no moves. ${winner} WINS ]`);
+        setMessage(`[ GAME OVER — ${loser} HAS NO MOVES. ${winner} WINS ]`);
         setAiVsAiRunning(false);
+        setGameOver(true);
       } else {
-        setGameState(data.gameState);
-        const { startX, startY, endX, endY, arrowX, arrowY } = data.move;
-        const c = color === 1 ? 'BLACK' : 'WHITE';
-        setMessage(`[ ${c}: (${startX},${startY})→(${endX},${endY}) arrow(${arrowX},${arrowY}) ]`);
+        const next = applyMove(current, move.startX, move.startY, move.endX, move.endY, move.arrowX, move.arrowY);
+        setGameState(next);
+        const label = color === 1 ? 'BLACK' : 'WHITE';
+        setMessage(`[ ${label}: (${move.startX},${move.startY})→(${move.endX},${move.endY}) arrow(${move.arrowX},${move.arrowY}) ]`);
         setAiTurn(color === 1 ? 2 : 1);
       }
-    } catch {
-      setMessage('[ ERROR: AI move failed ]');
-      setAiVsAiRunning(false);
-    } finally {
       setIsAIThinking(false);
-    }
+    }, 0);
   };
 
-  const handlePlayerMove = async (startX, startY, endX, endY, arrowX, arrowY) => {
-    try {
-      const res  = await fetch(`${API_URL}/api/game/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startX, startY, endX, endY, arrowX, arrowY }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        setMessage(`[ INVALID MOVE: ${data.error} ]`);
+  const handlePlayerMove = (startX, startY, endX, endY, arrowX, arrowY) => {
+    const afterPlayer = applyMove(stateRef.current, startX, startY, endX, endY, arrowX, arrowY);
+    setGameState(afterPlayer);
+    setSelectedCell(null);
+
+    const aiColor = playerColor === 1 ? 2 : 1;
+    if (getAllMoves(afterPlayer, aiColor).length === 0) {
+      setMessage(`[ GAME OVER — ${playerColor === 1 ? 'BLACK' : 'WHITE'} WINS ]`);
+      setGameOver(true);
+      return;
+    }
+
+    setMessage('[ AI THINKING... ]');
+    setIsAIThinking(true);
+    setTimeout(() => {
+      const move = getAIMove(afterPlayer, aiColor);
+      if (!move) {
+        setMessage(`[ GAME OVER — ${playerColor === 1 ? 'BLACK' : 'WHITE'} WINS ]`);
+        setGameOver(true);
+        setIsAIThinking(false);
         return;
       }
-      setGameState(data.gameState);
-      setSelectedCell(null);
-      setMessage('[ AI THINKING... ]');
-      const aiColor = playerColor === 1 ? 2 : 1;
-      setTimeout(() => doAIMove(aiColor), 400);
-    } catch {
-      setMessage('[ ERROR: move failed ]');
-    }
+      const afterAI = applyMove(afterPlayer, move.startX, move.startY, move.endX, move.endY, move.arrowX, move.arrowY);
+      setGameState(afterAI);
+      const label = aiColor === 1 ? 'BLACK' : 'WHITE';
+      setMessage(`[ ${label}: (${move.startX},${move.startY})→(${move.endX},${move.endY}) arrow(${move.arrowX},${move.arrowY}) ]`);
+
+      if (getAllMoves(afterAI, playerColor).length === 0) {
+        const loser  = playerColor === 1 ? 'BLACK' : 'WHITE';
+        const winner = aiColor === 1 ? 'BLACK' : 'WHITE';
+        setMessage(`[ GAME OVER — ${loser} HAS NO MOVES. ${winner} WINS ]`);
+        setGameOver(true);
+      }
+      setIsAIThinking(false);
+    }, 0);
   };
 
-  const handleNewGame = async () => {
+  const handleNewGame = () => {
     setAiVsAiRunning(false);
-    await resetToServer();
+    resetGame();
     if (gameMode === 'aivai') {
       setMessage('[ BLACK MOVES FIRST ]');
-      setAiVsAiRunning(true);
+      setTimeout(() => setAiVsAiRunning(true), 50);
     } else {
       const next = playerColor === 1 ? 2 : 1;
       setPlayerColor(next);
@@ -98,28 +107,20 @@ function App() {
     }
   };
 
-  const handleToggleMode = async () => {
+  const handleToggleMode = () => {
     const newMode = gameMode === 'pvai' ? 'aivai' : 'pvai';
     setGameMode(newMode);
     setAiVsAiRunning(false);
-    await resetToServer();
+    resetGame();
     if (newMode === 'aivai') {
       setMessage('[ AI VS AI — WATCH THE MACHINES BATTLE ]');
-      setAiVsAiRunning(true);
+      setTimeout(() => setAiVsAiRunning(true), 50);
     } else {
       setMessage('[ BLACK MOVES FIRST ]');
     }
   };
 
-  if (!gameState) {
-    return (
-      <div className="app">
-        <p className="loading">{'> INITIALIZING GAME ENGINE...'}</p>
-      </div>
-    );
-  }
-
-  const isInteractive = gameMode === 'pvai' && !isAIThinking;
+  const isInteractive = gameMode === 'pvai' && !isAIThinking && !gameOver;
 
   return (
     <div className="app">
@@ -189,7 +190,7 @@ function App() {
             <h3>MODES</h3>
             <ul>
               <li>Player vs AI — you control Black</li>
-              <li>AI vs AI — watch two MCTS engines battle</li>
+              <li>AI vs AI — watch two engines battle</li>
             </ul>
 
             <h3>LEGEND</h3>
@@ -224,9 +225,9 @@ function App() {
 
             <h3>AI ENGINE</h3>
             <ul>
-              <li>MCTS (Monte Carlo Tree Search)</li>
-              <li>~10s think time per move</li>
-              <li>Parallelized across CPU cores</li>
+              <li>Mobility heuristic evaluation</li>
+              <li>Runs entirely in your browser</li>
+              <li>No server required</li>
             </ul>
           </div>
         </aside>
