@@ -209,9 +209,14 @@ button.btn-danger:hover:not(:disabled) {
   flex-shrink: 0;
 }
 
-.legend-cell.arrow {
+.legend-cell.arrow-ai {
   background: #140404;
   border-color: #2a0a0a;
+}
+
+.legend-cell.arrow-player {
+  background: #010d20;
+  border-color: #0a1e3a;
 }
 
 .legend-cell.sel {

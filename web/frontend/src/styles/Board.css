@@ -14,13 +14,15 @@
   color: #555;
 }
 
-.phase-info.active-phase {
-  color: #0077ff;
-  text-shadow: 0 0 8px rgba(0, 119, 255, 0.4);
+.phase-info.player-phase {
+  color: #00cc44;
+  text-shadow: 0 0 8px rgba(0, 204, 68, 0.4);
+  font-weight: bold;
 }
 
 .phase-info.ai-phase {
-  color: #555;
+  color: #ff6622;
+  text-shadow: 0 0 8px rgba(255, 102, 34, 0.4);
   animation: pulse-phase 1.2s ease-in-out infinite alternate;
 }
 
@@ -100,13 +102,26 @@
   box-shadow: inset 0 0 10px rgba(255, 51, 51, 0.2);
 }
 
-.cell.arrow-cell {
+/* Player arrow — solid blue square */
+.cell.arrow-cell-player {
+  background: #010d20;
+  border-color: #0a1e3a;
+  cursor: not-allowed;
+}
+
+.cell.arrow-cell-player:hover {
+  background: #010d20;
+  border-color: #0a1e3a;
+}
+
+/* AI arrow — dark red with arrow shape */
+.cell.arrow-cell-ai {
   background: #120303;
   border-color: #1e0606;
   cursor: not-allowed;
 }
 
-.cell.arrow-cell:hover {
+.cell.arrow-cell-ai:hover {
   background: #120303;
   border-color: #1e0606;
 }
