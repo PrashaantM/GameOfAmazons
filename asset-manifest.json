@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/GameOfAmazons/static/css/main.cc741052.css",
-    "main.js": "/GameOfAmazons/static/js/main.53e3c2da.js",
+    "main.js": "/GameOfAmazons/static/js/main.1dcec34f.js",
     "index.html": "/GameOfAmazons/index.html",
     "main.cc741052.css.map": "/GameOfAmazons/static/css/main.cc741052.css.map",
-    "main.53e3c2da.js.map": "/GameOfAmazons/static/js/main.53e3c2da.js.map"
+    "main.1dcec34f.js.map": "/GameOfAmazons/static/js/main.1dcec34f.js.map"
   },
   "entrypoints": [
     "static/css/main.cc741052.css",
-    "static/js/main.53e3c2da.js"
+    "static/js/main.1dcec34f.js"
   ]
 }
