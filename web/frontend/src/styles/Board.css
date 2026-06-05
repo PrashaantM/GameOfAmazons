@@ -111,6 +111,18 @@
   border-color: #1e0606;
 }
 
+/* Player arrow — solid blue fill covers the whole square */
+.cell.player-arrow-cell {
+  background: #003a99;
+  border-color: #0055cc;
+  cursor: not-allowed;
+}
+
+.cell.player-arrow-cell:hover {
+  background: #003a99;
+  border-color: #0055cc;
+}
+
 /* ── Pieces ───────────────────────────────────────────── */
 .queen {
   font-size: 1.75em;

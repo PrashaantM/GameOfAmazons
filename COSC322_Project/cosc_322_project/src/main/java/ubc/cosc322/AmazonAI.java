@@ -32,7 +32,6 @@ public class AmazonAI {
 
     public int getMyColour() { return myColour; }
 
-
     public int[][] convertTo2D(ArrayList<Integer> gameState) {
         int[][] board = new int[10][10];
         for (int r = 0; r < 10; r++)
@@ -54,7 +53,7 @@ public class AmazonAI {
                 while (System.currentTimeMillis() < deadline) {
                     int[][] boardCopy = cloneBoard(board);
                     MCTSNode leaf = select(root, boardCopy);
-                    double result = evaluate(boardCopy, leaf.sideToMove);
+                    double result = evaluate(boardCopy);
                     backprop(leaf, result);
                 }
             });
@@ -63,7 +62,6 @@ public class AmazonAI {
         }
         for (Thread w : workers) w.join();
 
-        // Pick most-visited child
         MCTSNode best = null;
         for (MCTSNode child : root.children) {
             if (best == null || child.visits > best.visits) best = child;
@@ -72,7 +70,6 @@ public class AmazonAI {
         return best == null ? null : best.move;
     }
 
-
     private MCTSNode select(MCTSNode node, int[][] board) {
         while (true) {
             List<MCTSNode> children;
@@ -80,7 +77,6 @@ public class AmazonAI {
 
             if (children.isEmpty()) return node;
 
-            // Find an unvisited child first
             MCTSNode unvisited = null;
             synchronized (node) {
                 for (MCTSNode c : children) {
@@ -93,7 +89,7 @@ public class AmazonAI {
                 return unvisited;
             }
 
-            MCTSNode best = null;
+            MCTSNode bestNode = null;
             double bestScore = Double.NEGATIVE_INFINITY;
             synchronized (node) {
                 double logParent = Math.log(node.visits + 1);
@@ -103,17 +99,15 @@ public class AmazonAI {
                     double qRave  = c.raveVisits > 0 ? c.raveWins / c.raveVisits : 0.5;
                     double score  = (1 - beta) * qMcts + beta * qRave
                                   + UCT_C * Math.sqrt(logParent / c.visits);
-                    if (score > bestScore) { bestScore = score; best = c; }
+                    if (score > bestScore) { bestScore = score; bestNode = c; }
                 }
             }
-            applyMove(board, best.move, node.sideToMove);
-            node = best;
+            applyMove(board, bestNode.move, node.sideToMove);
+            node = bestNode;
         }
     }
 
-
     private void backprop(MCTSNode leaf, double result) {
-
         Set<Long> moveSet = new HashSet<>();
         for (MCTSNode n = leaf; n.move != null; n = n.parent)
             moveSet.add(moveKey(n.move));
@@ -142,8 +136,8 @@ public class AmazonAI {
              | ((long) m.arrowX <<  4) | m.arrowY;
     }
 
-
-    double evaluate(int[][] board, int sideToMove) {
+    /** Evaluate the board from the perspective of myColour. Returns a value in [0, 1]. */
+    double evaluate(int[][] board) {
         int[] mob  = quickMobility(board);
         int[] terr = floodTerritory(board);
 
@@ -166,12 +160,13 @@ public class AmazonAI {
     }
 
     private int[] quickMobility(int[][] board) {
-        boolean[] rB = new boolean[100], rW = new boolean[100];
+        boolean[] reachableBlack = new boolean[100];
+        boolean[] reachableWhite = new boolean[100];
         for (int r = 0; r < 10; r++) {
             for (int c = 0; c < 10; c++) {
                 int cell = board[r][c];
                 if (cell != BLACK && cell != WHITE) continue;
-                boolean[] tgt = (cell == BLACK) ? rB : rW;
+                boolean[] tgt = (cell == BLACK) ? reachableBlack : reachableWhite;
                 for (int dir = 0; dir < 8; dir++) {
                     int nr = r + DR[dir], nc = c + DC[dir];
                     while (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && board[nr][nc] == EMPTY) {
@@ -182,7 +177,10 @@ public class AmazonAI {
             }
         }
         int b = 0, w = 0;
-        for (int i = 0; i < 100; i++) { if (rB[i]) b++; if (rW[i]) w++; }
+        for (int i = 0; i < 100; i++) {
+            if (reachableBlack[i]) b++;
+            if (reachableWhite[i]) w++;
+        }
         return new int[]{b, w};
     }
 
@@ -218,7 +216,6 @@ public class AmazonAI {
         return dist;
     }
 
-
     List<Move> generateLegalMoves(int[][] board, int colour) {
         List<Move> moves = new ArrayList<>(1024);
         for (int r = 0; r < 10; r++) {
@@ -249,7 +246,6 @@ public class AmazonAI {
         return moves;
     }
 
-
     public void applyMove(int[][] board, Move move, int playerColor) {
         board[move.startX][move.startY] = EMPTY;
         board[move.endX][move.endY]     = playerColor;
@@ -263,7 +259,6 @@ public class AmazonAI {
     }
 
     int opponent(int colour) { return colour == BLACK ? WHITE : BLACK; }
-
 
     class MCTSNode {
         final MCTSNode parent;

@@ -230,6 +230,11 @@ button.btn-danger:hover:not(:disabled) {
   border-color: #550000;
 }
 
+.legend-cell.player-arrow-legend {
+  background: #003a99;
+  border-color: #0055cc;
+}
+
 .arrow-block-legend {
   width: 16px;
   height: 12px;

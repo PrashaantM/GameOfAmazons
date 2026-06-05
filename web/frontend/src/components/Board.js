@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import '../styles/Board.css';
 
-function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isAIThinking }) {
+function Board({ gameState, playerColor, selectedCell, onSelectCell, onMove, interactive, isAIThinking }) {
   const [movePhase, setMovePhase] = useState(null); // null | 'selecting' | 'shooting'
   const [queenStart, setQueenStart] = useState(null);
   const [queenEnd, setQueenEnd] = useState(null);
@@ -12,9 +12,9 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
     if (!interactive) return;
     const value = getCellValue(row, col);
 
-    // Phase 1: select a queen
+    // Phase 1: select one of the player's own queens
     if (!queenStart) {
-      if (value === 1 || value === 2) {
+      if (value === playerColor) {
         setQueenStart({ row, col });
         setMovePhase('selecting');
         onSelectCell({ row, col });
@@ -25,6 +25,7 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
     // Phase 2: choose queen destination
     if (!queenEnd) {
       if (queenStart.row === row && queenStart.col === col) {
+        // Deselect
         setQueenStart(null);
         setMovePhase(null);
         onSelectCell(null);
@@ -38,7 +39,7 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
       return;
     }
 
-    // Phase 3: shoot arrow (queen's old square is now vacated)
+    // Phase 3: shoot arrow (queen's old square is vacated)
     if (isValidArrowShot(queenEnd, { row, col }, queenStart)) {
       onMove(queenStart.row, queenStart.col, queenEnd.row, queenEnd.col, row, col);
       setQueenStart(null);
@@ -82,23 +83,29 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
   };
 
   const renderCell = (row, col) => {
-    const value = getCellValue(row, col);
+    const value      = getCellValue(row, col);
     const isSelected = selectedCell && selectedCell.row === row && selectedCell.col === col;
-    const isLight = (row + col) % 2 === 0;
+    const isLight    = (row + col) % 2 === 0;
 
     const classNames = ['cell', isLight ? 'light-sq' : 'dark-sq'];
     let content = null;
 
-    // Pieces — hide queen at vacated start position while shooting
     if (value === 1) {
-      const isVacated = movePhase === 'shooting' && queenStart && row === queenStart.row && col === queenStart.col;
+      // Visually vacate the queen's start square during the shooting phase
+      const isVacated = movePhase === 'shooting' && queenStart &&
+                        row === queenStart.row && col === queenStart.col;
       if (!isVacated) content = <span className="queen black-queen">♛</span>;
     } else if (value === 2) {
-      const isVacated = movePhase === 'shooting' && queenStart && row === queenStart.row && col === queenStart.col;
+      const isVacated = movePhase === 'shooting' && queenStart &&
+                        row === queenStart.row && col === queenStart.col;
       if (!isVacated) content = <span className="queen white-queen">♕</span>;
     } else if (value === 3) {
+      // AI arrow — red arrow shape
       classNames.push('arrow-cell');
       content = <div className="arrow-block" />;
+    } else if (value === 4) {
+      // Player arrow — solid blue filled square
+      classNames.push('player-arrow-cell');
     }
 
     if (isSelected) classNames.push('selected');
@@ -113,7 +120,8 @@ function Board({ gameState, selectedCell, onSelectCell, onMove, interactive, isA
     if (movePhase === 'shooting' && queenEnd) {
       if (queenEnd.row === row && queenEnd.col === col) {
         classNames.push('queen-position');
-      } else if (value !== 3 && isValidArrowShot(queenEnd, { row, col }, queenStart)) {
+      } else if (value !== 3 && value !== 4 &&
+                 isValidArrowShot(queenEnd, { row, col }, queenStart)) {
         classNames.push('valid-arrow');
       }
     }

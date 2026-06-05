@@ -2,25 +2,26 @@ const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 
 export function initializeGameState() {
   const state = new Array(121).fill(0);
-  // Black queens
-  state[1 * 11 + 1] = 1;
-  state[1 * 11 + 9] = 1;
-  state[9 * 11 + 1] = 1;
-  state[9 * 11 + 9] = 1;
-  // White queens
-  state[1 * 11 + 5] = 2;
-  state[1 * 11 + 10] = 2;
-  state[9 * 11 + 5] = 2;
-  state[9 * 11 + 10] = 2;
+  // Black queens (move first — standard starting positions, top portion)
+  state[1  * 11 + 4]  = 1;  // row 1,  col 4
+  state[1  * 11 + 7]  = 1;  // row 1,  col 7
+  state[4  * 11 + 1]  = 1;  // row 4,  col 1
+  state[4  * 11 + 10] = 1;  // row 4,  col 10
+  // White queens (bottom portion)
+  state[7  * 11 + 1]  = 2;  // row 7,  col 1
+  state[7  * 11 + 10] = 2;  // row 7,  col 10
+  state[10 * 11 + 4]  = 2;  // row 10, col 4
+  state[10 * 11 + 7]  = 2;  // row 10, col 7
   return state;
 }
 
-export function applyMove(state, startX, startY, endX, endY, arrowX, arrowY) {
+// arrowValue: 3 = AI arrow (red), 4 = player arrow (blue filled)
+export function applyMove(state, startX, startY, endX, endY, arrowX, arrowY, arrowValue = 3) {
   const next = [...state];
   const piece = next[startX * 11 + startY];
   next[startX * 11 + startY] = 0;
-  next[endX * 11 + endY] = piece;
-  next[arrowX * 11 + arrowY] = 3;
+  next[endX   * 11 + endY]   = piece;
+  next[arrowX * 11 + arrowY] = arrowValue;
   return next;
 }
 
